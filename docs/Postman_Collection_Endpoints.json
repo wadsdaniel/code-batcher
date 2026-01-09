@@ -1,0 +1,103 @@
+{
+  "info": {
+    "name": "Code Batcher API",
+    "_postman_id": "f5b8f123-1a2b-4c3d-9e8f-abcdef123456",
+    "description": "API endpoints for Code Batcher (Scan, Batch, Download, Download Batches)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Scan Project Folder",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/api/fileBatcher/scan?projectPath=/home/daniel/_2025_RRR/Software Engineering/Projects/code-batcher-backend/src",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "fileBatcher", "scan"],
+          "query": [
+            {
+              "key": "projectPath",
+              "value": "/home/daniel/_2025_RRR/Software Engineering/Projects/code-batcher-backend/src"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Batch Selected Files (Preview)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"projectPath\": \"/home/daniel/_2025_RRR/Software Engineering/Projects/code-batcher-backend/src\",\n  \"linesPerBatch\": 3000,\n  \"selectedTree\": [\n    {\n      \"name\": \"modules\",\n      \"path\": \"/home/daniel/_2025_RRR/Software Engineering/Projects/code-batcher-backend/src/modules\",\n      \"type\": \"folder\",\n      \"selected\": true,\n      \"children\": [\n        {\n          \"name\": \"fileBatcher\",\n          \"path\": \"/home/daniel/_2025_RRR/Software Engineering/Projects/code-batcher-backend/src/modules/fileBatcher\",\n          \"type\": \"folder\",\n          \"selected\": true,\n          \"children\": [\n            {\n              \"name\": \"service.ts\",\n              \"path\": \"/home/daniel/_2025_RRR/Software Engineering/Projects/code-batcher-backend/src/modules/fileBatcher/service.ts\",\n              \"type\": \"file\",\n              \"selected\": true\n            }\n          ]\n        }\n      ]\n    }\n  ]\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/fileBatcher/batch",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "fileBatcher", "batch"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Download Combined File (.txt)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"projectPath\": \"/home/daniel/_2025_RRR/Software Engineering/Projects/code-batcher-backend/src\",\n  \"selectedTree\": [\n    {\n      \"name\": \"modules\",\n      \"path\": \"/home/daniel/_2025_RRR/Software Engineering/Projects/code-batcher-backend/src/modules\",\n      \"type\": \"folder\",\n      \"selected\": true\n    }\n  ]\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/fileBatcher/download",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "fileBatcher", "download"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Download Batched Files (ZIP)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"projectPath\": \"/home/daniel/_2025_RRR/Software Engineering/Projects/code-batcher-backend/src\",\n  \"linesPerBatch\": 1000,\n  \"selectedTree\": [\n    {\n      \"name\": \"modules\",\n      \"path\": \"/home/daniel/_2025_RRR/Software Engineering/Projects/code-batcher-backend/src/modules\",\n      \"type\": \"folder\",\n      \"selected\": true\n    }\n  ]\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/fileBatcher/download-batches",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "fileBatcher", "download-batches"]
+        }
+      },
+      "response": []
+    }
+  ]
+}
