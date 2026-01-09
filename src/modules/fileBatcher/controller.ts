@@ -1,8 +1,9 @@
 import { Request, Response } from 'express';
 import { collectSelectedFiles, combineFilesContent, splitContentIntoBatches } from './service';
-import { scanProject } from './utils';
+import { scanProject } from '../../shared/utils/fileUtils';
 import { FileNode } from './types';
 import archiver from 'archiver';
+import { logger } from '../../shared/logger';
 
 /**
  * GET /fileBatcher/scan
@@ -14,16 +15,19 @@ export const scanProjectHandler = (req: Request, res: Response) => {
     const projectPath = req.query.projectPath as string;
 
     if (!projectPath) {
+      logger.error('projectPath query parameter missing');
       return res.status(400).json({
         error: 'projectPath query parameter is required',
       });
     }
 
+    logger.info(`Scanning project directory: ${projectPath}`);
     const tree: FileNode[] = scanProject(projectPath);
+    logger.info(`Scan complete: found ${tree.length} top-level nodes`);
 
     return res.json({ tree });
   } catch (err) {
-    console.error(err);
+    logger.error({ err }, 'Failed to scan project directory');
     return res.status(500).json({
       error: 'Failed to scan project directory',
     });
@@ -39,21 +43,19 @@ export const batchFiles = (req: Request, res: Response) => {
     const { selectedTree, projectPath, linesPerBatch } = req.body;
 
     if (!selectedTree || !projectPath) {
+      logger.error('selectedTree or projectPath missing in batch request');
       return res.status(400).json({
         error: 'selectedTree and projectPath are required in body',
       });
     }
 
-    // 1. Collect selected files
+    logger.info(`Batching files from project: ${projectPath}`);
     const selectedFiles = collectSelectedFiles(selectedTree);
-
-    // 2. Combine content in Code Batcher format
     const combinedContent = combineFilesContent(selectedFiles, projectPath);
-
-    // 3. Split into batches (user-defined or default)
     const batchSize = linesPerBatch && Number(linesPerBatch) > 0 ? Number(linesPerBatch) : 3000;
-
     const batches = splitContentIntoBatches(combinedContent, batchSize);
+
+    logger.info(`Batching complete: ${batches.length} batches created`);
 
     return res.json({
       totalFiles: selectedFiles.length,
@@ -61,7 +63,7 @@ export const batchFiles = (req: Request, res: Response) => {
       batches,
     });
   } catch (err) {
-    console.error(err);
+    logger.error({ err }, 'Failed to batch files');
     return res.status(500).json({
       error: 'Failed to batch files',
     });
@@ -77,20 +79,23 @@ export const downloadBatch = (req: Request, res: Response) => {
     const { selectedTree, projectPath } = req.body;
 
     if (!selectedTree || !projectPath) {
+      logger.error('selectedTree or projectPath missing in download request');
       return res.status(400).json({
         error: 'selectedTree and projectPath required',
       });
     }
 
+    logger.info(`Generating single text download for project: ${projectPath}`);
     const selectedFiles = collectSelectedFiles(selectedTree);
     const combinedContent = combineFilesContent(selectedFiles, projectPath);
 
     res.setHeader('Content-Type', 'text/plain');
     res.setHeader('Content-Disposition', 'attachment; filename="code-batcher.txt"');
-
     res.send(combinedContent);
+
+    logger.info(`Download prepared: ${selectedFiles.length} files`);
   } catch (err) {
-    console.error(err);
+    logger.error({ err }, 'Failed to generate file download');
     res.status(500).json({
       error: 'Failed to generate file',
     });
@@ -106,16 +111,16 @@ export const downloadBatches = (req: Request, res: Response) => {
     const { selectedTree, projectPath, linesPerBatch } = req.body;
 
     if (!selectedTree || !projectPath) {
+      logger.error('selectedTree or projectPath missing in download-batches request');
       return res.status(400).json({
         error: 'selectedTree and projectPath required',
       });
     }
 
+    logger.info(`Generating ZIP of batches for project: ${projectPath}`);
     const selectedFiles = collectSelectedFiles(selectedTree);
     const combinedContent = combineFilesContent(selectedFiles, projectPath);
-
     const batchSize = linesPerBatch && Number(linesPerBatch) > 0 ? Number(linesPerBatch) : 3000;
-
     const batches = splitContentIntoBatches(combinedContent, batchSize);
 
     res.setHeader('Content-Type', 'application/zip');
@@ -131,8 +136,10 @@ export const downloadBatches = (req: Request, res: Response) => {
     });
 
     archive.finalize();
+
+    logger.info(`ZIP generation started for ${batches.length} batches`);
   } catch (err) {
-    console.error(err);
+    logger.error({ err }, 'Failed to generate batch ZIP');
     res.status(500).json({
       error: 'Failed to generate batch ZIP',
     });
