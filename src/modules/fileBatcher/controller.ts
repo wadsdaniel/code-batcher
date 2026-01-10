@@ -4,6 +4,7 @@ import { scanProject } from '../../shared/utils/fileUtils';
 import { FileNode } from './types';
 import archiver from 'archiver';
 import { logger } from '../../shared/logger';
+import { collectAllFiles } from './utils';
 
 /**
  * GET /fileBatcher/scan
@@ -142,6 +143,100 @@ export const downloadBatches = (req: Request, res: Response) => {
     logger.error({ err }, 'Failed to generate batch ZIP');
     res.status(500).json({
       error: 'Failed to generate batch ZIP',
+    });
+  }
+};
+
+/**
+ * POST /fileBatcher/aggregate
+ * Automatically scans the entire project,
+ * selects ALL files, batches them,
+ * and downloads the batches as a ZIP.
+ */
+export const aggregateProject = (req: Request, res: Response) => {
+  try {
+    const { projectPath, linesPerBatch } = req.body;
+
+    if (!projectPath) {
+      return res.status(400).json({
+        error: 'projectPath is required',
+      });
+    }
+
+    logger.info('[AGGREGATE] Starting full project aggregation', {
+      projectPath,
+    });
+
+    /**
+     * 1. Scan entire project
+     */
+    const tree: FileNode[] = scanProject(projectPath);
+
+    /**
+     * 2. Force-select everything
+     */
+    const selectAll = (nodes: FileNode[]) => {
+      for (const node of nodes) {
+        node.selected = true;
+        if (node.children?.length) {
+          selectAll(node.children);
+        }
+      }
+    };
+
+    selectAll(tree);
+
+    /**
+     * 3. Collect all files
+     */
+    const selectedFiles = collectSelectedFiles(tree);
+
+    logger.info('[AGGREGATE] Files collected', {
+      totalFiles: selectedFiles.length,
+    });
+
+    /**
+     * 4. Combine + batch
+     */
+    const combinedContent = combineFilesContent(selectedFiles, projectPath);
+
+    const batchSize = linesPerBatch && Number(linesPerBatch) > 0 ? Number(linesPerBatch) : 3000;
+
+    const batches = splitContentIntoBatches(combinedContent, batchSize);
+
+    logger.info('[AGGREGATE] Batches created', {
+      totalBatches: batches.length,
+      batchSize,
+    });
+
+    /**
+     * 5. Stream ZIP download
+     */
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', 'attachment; filename="code-batcher-aggregate.zip"');
+
+    const archive = archiver('zip', { zlib: { level: 9 } });
+
+    archive.on('error', (err) => {
+      logger.error('[AGGREGATE] ZIP generation failed', err);
+      res.status(500).end();
+    });
+
+    archive.pipe(res);
+
+    batches.forEach((batch) => {
+      archive.append(batch.content, {
+        name: `batch-${batch.batchNumber}.txt`,
+      });
+    });
+
+    archive.finalize();
+
+    logger.info('[AGGREGATE] ZIP stream finalized');
+  } catch (err) {
+    logger.error('[AGGREGATE] Fatal error', err);
+    res.status(500).json({
+      error: 'Failed to aggregate project',
     });
   }
 };

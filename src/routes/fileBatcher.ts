@@ -4,6 +4,7 @@ import {
   batchFiles,
   downloadBatch,
   downloadBatches,
+  aggregateProject,
 } from '../modules/fileBatcher/controller';
 
 import { z } from 'zod';
@@ -59,5 +60,16 @@ const downloadBatchesSchema = z.object({
 });
 
 router.post('/download-batches', validateBody(downloadBatchesSchema), downloadBatches);
+
+/**
+ * AGGREGATE PROJECT (AUTO-SELECT ALL FILES)
+ * POST /aggregate
+ */
+const aggregateProjectSchema = z.object({
+  projectPath: z.string().min(1, 'projectPath is required'),
+  linesPerBatch: z.number().positive().optional(),
+});
+
+router.post('/aggregate', validateBody(aggregateProjectSchema), aggregateProject);
 
 export default router;
