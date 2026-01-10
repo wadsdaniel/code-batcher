@@ -98,6 +98,30 @@
         }
       },
       "response": []
+    },
+    {
+      "name": "Aggregate Entire Project (Auto-Select All)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"projectPath\": \"/home/daniel/_2025_RRR/Software Engineering/Projects/code-batcher-backend/src\",\n  \"linesPerBatch\": 2000\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/fileBatcher/aggregate",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "fileBatcher", "aggregate"]
+        }
+      },
+      "response": []
     }
   ]
 }
